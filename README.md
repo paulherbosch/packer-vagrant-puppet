@@ -36,7 +36,8 @@ slim_hinumber="HI"
 slim_customer="cegeka"
 slim_datacenter="vagrant"
 slim_environment="dev"
-slim_application="vagrant"```
+slim_application="vagrant"
+```
 
 ## Puppet Monorepo
 The vagrant puppet provisioner needs access to all puppet modules. We created a puppet monorepo which contains all cegeka puppet-modules.  This repo needs to be cloned to your workstation so it can be referenced in the `Vagrantfile`:
@@ -147,7 +148,8 @@ Vagrant.configure("2") do |config|
     puppet.working_directory = "/tmp/vagrant-puppet"
     puppet.options           = "--hiera_config=/vagrant/hiera.yaml --verbose --debug"
   end
-end```
+end
+```
 
 Run `vagrant up` to start the box  
 
