@@ -18,7 +18,8 @@ A standard jeos profile was used with a custom kickstart script to add a vagrant
 
 Here's the link to the jeos profile: `https://github.com/cegeka/jeos-iso-build/blob/master/image-service/profiles/svintvagrantrhel7.intra.cegeka.be.txt`
 
-```slim_hwtype="virtual-esxi"
+```
+slim_hwtype="virtual-esxi"
 slim_cfgtype="node"
 slim_swrole=""
 slim_architecture="x86_64"
@@ -42,9 +43,7 @@ slim_application="vagrant"
 ## Puppet Monorepo
 The vagrant puppet provisioner needs access to all puppet modules. We created a puppet monorepo which contains all cegeka puppet-modules.  This repo needs to be cloned to your workstation so it can be referenced in the `Vagrantfile`:
 
-
 https://github.com/cegeka/monorepo-puppet-modules
-
 
 ## Packer Template
 Folder `cegeka-jeos-centos-7` contains a packer template and a couple of scripts.  
@@ -55,7 +54,8 @@ Update `template.json` to make it use the iso you downloaded and run following c
 
 The above will generate a vagrant .box file in the current directory.
 
-```{
+```
+{
   "provisioners": [
     {
       "type": "shell",
@@ -118,13 +118,16 @@ Add the freshly built vagrant box to your config:
 
 Create a new directory and Vagrantfile for your new box:
 
-```mkdir ~/vagrant/cegeka-rhel7
+```
+mkdir ~/vagrant/cegeka-rhel7
 cd ~/vagrant/cegeka-rhel7
-vagrant init name-of-vm-to-be-used-in-virtualbox```
+vagrant init name-of-vm-to-be-used-in-virtualbox
+```
 
 Edit the vagrantfile
 
-```# -*- mode: ruby -*-
+```
+# -*- mode: ruby -*-
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
