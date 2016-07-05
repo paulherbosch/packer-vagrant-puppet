@@ -16,6 +16,65 @@ We want to build a vagrant box with packer using a JEOS iso because we need the 
 
 A standard jeos profile was used with a custom kickstart script to add a vagrant user.
 
+The only differences between the default kickstart en this one are:
+
+- disable the puppet service. we'll use `vagrant provision` and don't need the daemon running
+- create a vagrant user so packer can ssh into the vm during the postbuild process
+
+https://github.com/cegeka/jeos-iso-build/blob/master/image-service/input/kickstart/custom/svintvagrantrhel7.intra.cegeka.be/ks.cfg.end-el7
+```
+%packages
+@jeos
+%end
+
+%pre
+%end
+
+%post
+#!/bin/sh
+
+# Cegeka splash screen
+cat <<EOF | augtool
+set /files/boot/grub/menu.lst/splashimage /boot/grub/cegeka-splash.xpm.gz
+save
+EOF
+
+# Use Cegeka generated certificates
+cat <<EOF | augtool
+set /files/etc/puppet/puppet.conf/main/ssldir /etc/cegeka/ssl
+save
+EOF
+
+# Setup Puppet pluginsync
+cat <<EOF | augtool
+set /files/etc/puppet/puppet.conf/main/pluginsync true
+save
+EOF
+
+# Manage services on boot
+chkconfig iscsi off
+chkconfig iscsid off
+chkconfig puppet off
+
+# Remove unnecessary RPMs
+rpm -e system-config-securitylevel-tui
+
+# Import Cegeka RPM signing GPG key
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-CGK
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-Cegeka
+
+# Import RedHat RPM signing GPG key
+rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+
+# Create Vagrant User
+/usr/sbin/groupadd -g 65534 vagrant
+/usr/sbin/useradd vagrant -u 65534 -g vagrant -G wheel
+echo "vagrant"|passwd --stdin vagrant
+echo "vagrant        ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers.d/vagrant
+echo "Defaults:vagrant !requiretty"                 >> /etc/sudoers.d/vagrant
+chmod 0440 /etc/sudoers.d/vagrant
+```
+
 Here's the link to the jeos profile: `https://github.com/cegeka/jeos-iso-build/blob/master/image-service/profiles/svintvagrantrhel7.intra.cegeka.be.txt`
 
 ```
@@ -48,7 +107,9 @@ https://github.com/cegeka/monorepo-puppet-modules
 ## Packer Template
 Folder `cegeka-jeos-centos-7` contains a packer template and a couple of scripts.  
 You can use this to build a vagrant box using the JEOS iso mentioned above.  
-Update `template.json` to make it use the iso you downloaded and run following command to start the build:
+Update `template.json` to make it use the iso you downloaded.
+Don't forget to update iso checksum (use `shasum isofile.iso)
+Run following command to start the build:
 
 `packer build template.json`
 
@@ -77,7 +138,7 @@ The above will generate a vagrant .box file in the current directory.
       "type": "vagrant",
       "override": {
         "virtualbox": {
-          "output": "centos-7-1-x64-virtualbox.box"
+          "output": "cegeka-vagrant-rhel7.box"
         }
       }
     }
@@ -92,7 +153,7 @@ The above will generate a vagrant .box file in the current directory.
       "disk_size": 40520,
       "guest_os_type": "RedHat_64",
       "http_directory": "http",
-      "iso_checksum": "3af199d35f0b2897c178104a5751069e958788cf",
+      "iso_checksum": "f0abc97c0e953419272c57e45bc5f20fb7212abe",
       "iso_checksum_type": "sha1",
       "iso_url": "jeos_svintvagrantrhel7.intra.cegeka.be_RedHat_7_x86_64.iso",
       "ssh_username": "vagrant",
@@ -103,8 +164,8 @@ The above will generate a vagrant .box file in the current directory.
       "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
       "virtualbox_version_file": ".vbox_version",
       "vboxmanage": [
-        [ "modifyvm", "{{.Name}}", "--memory", "512" ],
-        [ "modifyvm", "{{.Name}}", "--cpus", "1" ]
+        [ "modifyvm", "{{.Name}}", "--memory", "1024" ],
+        [ "modifyvm", "{{.Name}}", "--cpus", "2" ]
       ]
     }
   ]
@@ -114,7 +175,7 @@ The above will generate a vagrant .box file in the current directory.
 ## Vagrant
 Add the freshly built vagrant box to your config:
 
-`vagrant box add ~/path/to/your/vagrant.box --name name-for-your-vagrant-box-e.g.-cegeka-rhel7`
+`vagrant box add ~/path/to/your/vagrant.box --name cegeka-rhel7`
 
 Create a new directory and Vagrantfile for your new box:
 
@@ -134,23 +195,31 @@ Vagrant.configure("2") do |config|
   # set vagrantbox
   config.vm.box = "cegeka-rhel7"
 
-  # do not mount /vagrant
-  # config.vm.synced_folder ".", "/vagrant", disabled: true
-
   # set hostname
   config.vm.hostname = "svintvagrantrhel7"
 
   # create a private network, which allows host-only access to the machine
   # config.vm.network "private_network", ip: "192.168.33.10"
 
-  # puppet provisioning - NOT WORKING YET!
+  # puppet provisioner
   config.vm.provision "puppet" do |puppet|
-    puppet.manifests_path    = "/Users/paulh/git-repos/monorepo-puppet-modules"
-    puppet.manifest_file     = "default.pp"
-    # puppet.hiera_config_path = "/Users/paulh/git-repos/monorepo-puppet-modules/hiera.yaml"
-    puppet.working_directory = "/tmp/vagrant-puppet"
-    puppet.options           = "--hiera_config=/vagrant/hiera.yaml --verbose --debug"
+    # path to monorepo. has to be fixed.
+    # I'm using manually generated symlinks to currect modulenames etc.
+    puppet.environment_path  = "/Users/paulh/vagrant-puppet-test/"
+    puppet.environment       = "dev"
+    puppet.hiera_config_path = "hiera.yaml"
+    puppet.options           = "--verbose"
   end
+
+# shell provisioner - stop puppet daemon.
+#
+# profile::iac::base enables the puppet service after each 'vagrant provision'
+# vagrant does not use the puppet daemon so it must be disabled.
+$script = <<SCRIPT
+  sudo systemctl stop puppet
+SCRIPT
+  config.vm.provision "shell", inline: $script
+
 end
 ```
 

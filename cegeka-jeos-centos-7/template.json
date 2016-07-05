@@ -20,7 +20,7 @@
       "type": "vagrant",
       "override": {
         "virtualbox": {
-          "output": "centos-7-1-x64-virtualbox.box"
+          "output": "cegeka-vagrant-rhel7.box"
         }
       }
     }
@@ -35,7 +35,7 @@
       "disk_size": 40520,
       "guest_os_type": "RedHat_64",
       "http_directory": "http",
-      "iso_checksum": "3af199d35f0b2897c178104a5751069e958788cf",
+      "iso_checksum": "f0abc97c0e953419272c57e45bc5f20fb7212abe",
       "iso_checksum_type": "sha1",
       "iso_url": "jeos_svintvagrantrhel7.intra.cegeka.be_RedHat_7_x86_64.iso",
       "ssh_username": "vagrant",
@@ -46,8 +46,8 @@
       "guest_additions_path": "VBoxGuestAdditions_{{.Version}}.iso",
       "virtualbox_version_file": ".vbox_version",
       "vboxmanage": [
-        [ "modifyvm", "{{.Name}}", "--memory", "512" ],
-        [ "modifyvm", "{{.Name}}", "--cpus", "1" ]
+        [ "modifyvm", "{{.Name}}", "--memory", "1024" ],
+        [ "modifyvm", "{{.Name}}", "--cpus", "2" ]
       ]
     }
   ]
