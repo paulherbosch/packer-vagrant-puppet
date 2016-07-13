@@ -12,13 +12,14 @@ Temporary holding place for packer-vagrant-puppet related config tests.
 `https://codex.cegeka.be/jenkins/job/run-jeos-iso-creation-build/1702/artifact/jeos-iso-build/target/dist/jeos_svintvagrantrhel7.intra.cegeka.be_RedHat_7_x86_64.iso`
 
 ## JEOS Profile
-We want to build a vagrant box with packer using a JEOS iso because we need the Cegeka certs to present in order to gain access to our pulp yum repo's.
+We want to build vagrant boxes with packer.  
+Packer needs to use an is built with Jeos because we need all Cegeka certs to be present on the vagrant box so it has access to our pulp yum repo's.
 
-A standard jeos profile was used with a custom kickstart script to add a vagrant user.
+A standard jeos profile was used with a custom kickstart script which adds a vagrant user.
 
 The only differences between the default kickstart en this one are:
 
-- disable the puppet service. we'll use `vagrant provision` and don't need the daemon running
+- disable the puppet service. we'll use `vagrant provision` and don't need the puppet daemon running
 - create a vagrant user so packer can ssh into the vm during the postbuild process
 
 https://github.com/cegeka/jeos-iso-build/blob/master/image-service/input/kickstart/custom/svintvagrantrhel7.intra.cegeka.be/ks.cfg.end-el7
@@ -100,13 +101,14 @@ slim_application="vagrant"
 ```
 
 ## Puppet Monorepo
-The vagrant puppet provisioner needs access to all puppet modules. We created a puppet monorepo which contains all cegeka puppet-modules.  This repo needs to be cloned to your workstation so it can be referenced in the `Vagrantfile`:
+The vagrant puppet provisioner needs access to all puppet modules. We created a puppet monorepo which contains all cegeka puppet-modules.  
+It's probably easiest if you clone this repo and use it as the root for your vagrant project.
 
 https://github.com/cegeka/monorepo-puppet-modules
 
 ## Packer Template
-Folder `cegeka-jeos-centos-7` contains a packer template and a couple of scripts.  
-You can use this to build a vagrant box using the JEOS iso mentioned above.  
+Folders `cegeka-jeos-rhel6` and `cegeka-jeos-rhel7` contain a packer template and a couple of scripts.  
+You can use this to build a vagrant box using the JEOS isos mentioned above.  
 Update `template.json` to make it use the iso you downloaded.
 Don't forget to update iso checksum (use `shasum isofile.iso)
 Run following command to start the build:
@@ -127,6 +129,7 @@ The above will generate a vagrant .box file in the current directory.
             "scripts/base.sh",
             "scripts/vagrant.sh",
             "scripts/virtualbox.sh",
+            "scripts/puppet.sh",
             "scripts/cleanup.sh"
           ]
         }
@@ -173,6 +176,8 @@ The above will generate a vagrant .box file in the current directory.
 ```
 
 ## Vagrant
+
+### Manual setup, without puppet provisioning
 Add the freshly built vagrant box to your config:
 
 `vagrant box add ~/path/to/your/vagrant.box --name cegeka-rhel7`
@@ -193,36 +198,36 @@ Edit the vagrantfile
 
 Vagrant.configure("2") do |config|
   # set vagrantbox
-  config.vm.box = "cegeka-rhel7"
+  config.vm.box = 'cegeka-rhel7'
 
   # set hostname
-  config.vm.hostname = "svintvagrantrhel7"
+  config.vm.hostname = 'svintvagrantrhel7'
 
   # create a private network, which allows host-only access to the machine
-  # config.vm.network "private_network", ip: "192.168.33.10"
+  config.vm.network 'private_network', ip: '192.168.33.10'
 
-  # puppet provisioner
-  config.vm.provision "puppet" do |puppet|
-    # path to monorepo. has to be fixed.
-    # I'm using manually generated symlinks to currect modulenames etc.
-    puppet.environment_path  = "/Users/paulh/vagrant-puppet-test/"
-    puppet.environment       = "dev"
-    puppet.hiera_config_path = "hiera.yaml"
-    puppet.options           = "--verbose"
-  end
+  # # puppet provisioner
+  # config.vm.provision 'puppet' do |puppet|
+  #   puppet.environment_path  = 'puppet'
+  #   puppet.hiera_config_path = 'puppet/hiera.yaml'
+  #   puppet.environment       = 'dev'
+  #   puppet.options           = '--verbose --fileserverconfig=/vagrant/fileserver.conf'
+  # end
 
-# shell provisioner - stop puppet daemon.
-#
-# profile::iac::base enables the puppet service after each 'vagrant provision'
-# vagrant does not use the puppet daemon so it must be disabled.
-$script = <<SCRIPT
-  sudo systemctl stop puppet
-SCRIPT
-  config.vm.provision "shell", inline: $script
-
+  # shell provisioner - stop puppet daemon.
+  #
+  # profile::iac::base enables the puppet service after each 'vagrant provision'
+  # vagrant does not use the puppet daemon so it can be stopped
+  config.vm.provision 'shell', inline: 'sudo systemctl stop puppet'
 end
 ```
 
 Run `vagrant up` to start the box  
 
-Run `vagrant provision` to start the puppet run
+Run `vagrant ssh` to access your box
+
+If you uncomment `config.vm.network 'private_network'`, you can access the ip address in the config directly from you mac.  
+I find this config handy becuase it eliminates the need for portforwarding.
+
+### (semi) Automatic setup
+If you clone the `git@github.com:cegeka/monorepo-puppet-modules.git` repository you can use it as the root for your vagrant project.

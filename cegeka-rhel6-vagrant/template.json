@@ -9,6 +9,7 @@
             "scripts/base.sh",
             "scripts/vagrant.sh",
             "scripts/virtualbox.sh",
+            "scripts/puppet.sh",
             "scripts/cleanup.sh"
           ]
         }
@@ -20,7 +21,7 @@
       "type": "vagrant",
       "override": {
         "virtualbox": {
-          "output": "cegeka-vagrant-rhel7.box"
+          "output": "cegeka-vagrant-rhel6.box"
         }
       }
     }
@@ -35,9 +36,9 @@
       "disk_size": 40520,
       "guest_os_type": "RedHat_64",
       "http_directory": "http",
-      "iso_checksum": "f0abc97c0e953419272c57e45bc5f20fb7212abe",
+      "iso_checksum": "417494e2a100c34137c0bc5502d698807e72adcf",
       "iso_checksum_type": "sha1",
-      "iso_url": "jeos_svintvagrantrhel7.intra.cegeka.be_RedHat_7_x86_64.iso",
+      "iso_url": "jeos_svintvagrantrhel6.intra.cegeka.be_RedHat_6_x86_64.iso",
       "ssh_username": "vagrant",
       "ssh_password": "vagrant",
       "ssh_port": 22,
