@@ -107,7 +107,7 @@ It's probably easiest if you clone this repo and use it as the root for your vag
 https://github.com/cegeka/monorepo-puppet-modules
 
 ## Packer Template
-Folders `cegeka-jeos-rhel6` and `cegeka-jeos-rhel7` contain a packer template and a couple of scripts.  
+Folders `cegeka-rhel6-vagrant` and `cegeka-rhel7-vagrant` contain a packer template and a couple of scripts.  
 You can use this to build a vagrant box using the JEOS isos mentioned above.  
 Update `template.json` to make it use the iso you downloaded.
 Don't forget to update iso checksum (use `shasum isofile.iso)
@@ -231,3 +231,5 @@ I find this config handy becuase it eliminates the need for portforwarding.
 
 ### (semi) Automatic setup
 If you clone the `git@github.com:cegeka/monorepo-puppet-modules.git` repository you can use it as the root for your vagrant project.
+
+... TBC ...
